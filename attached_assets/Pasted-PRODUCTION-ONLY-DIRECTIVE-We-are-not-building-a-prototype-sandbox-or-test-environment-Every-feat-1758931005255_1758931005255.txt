@@ -1,0 +1,48 @@
+PRODUCTION-ONLY DIRECTIVE
+
+We are not building a prototype, sandbox, or test environment.
+Every feature, every line of code, and every route must be designed for live production use on Solana mainnet.
+
+✅ Requirements
+	•	No fake authority checks.
+	•	Remove all “temporary disable,” “fake pass,” or “mock verify” logic.
+	•	Authority must always be validated via PDA lookup against the actual Solana blockchain.
+	•	No demo data or hardcoded mints.
+	•	Only use on-chain data via RPC (Alchemy, Helius DAS).
+	•	All metadata, royalties, attributes must be read directly from Solana, never from a local mock.
+	•	No placeholder transaction builders.
+	•	Every transaction must be a real updateV1 instruction built with UMI + web3.js, signed by the user’s wallet, and confirmed via mainnet RPC.
+	•	No “simulation-only” or “fake success” flows allowed.
+	•	No mock batch jobs.
+	•	Batch editing must actually build, sign, and submit transactions against the blockchain.
+	•	Progress bars, toasts, and history must reflect real transaction states from Solana RPC + tx_ledger database.
+	•	No test wallets or bypass modes.
+	•	All authority, royalties, and metadata updates must be tied directly to the connected wallet via wallet-adapter + on-chain PDA checks.
+	•	Service fees must always be real.
+	•	Transfer instructions must send SOL to the treasury wallet on every metadata update transaction.
+	•	No bypasses or “test mode” skipping.
+	•	Database must reflect production events.
+	•	tx_ledger must store actual on-chain transaction signatures.
+	•	No fake rows or mock jobs in batch_jobs.
+	•	UI must reflect real blockchain state.
+	•	Collection size must match the real count on chain.
+	•	Traits, royalties, creator wallets must come from live NFT metadata.
+	•	No placeholder “debug panels” or “smoke test” views in production.
+
+🚫 Explicitly Forbidden
+	•	Mock authority flags (✅ for testing)
+	•	Placeholder RPC calls
+	•	Simulated transaction confirmations
+	•	Any temporary shortcuts that make UI appear to work without writing to blockchain
+
+🎯 Deliverable
+
+At the end of each phase, I should be able to:
+	1.	Connect a real wallet (Phantom).
+	2.	Select a real NFT or collection on Solana mainnet.
+	3.	Modify metadata/royalties.
+	4.	Sign with Phantom.
+	5.	See the change reflected immediately on Solana explorers (e.g., Solscan, SolanaFM).
+	6.	See transaction in my app’s tx history (from real DB + RPC).
+
+This is production software. Every feature must be wired to mainnet. No mock paths.

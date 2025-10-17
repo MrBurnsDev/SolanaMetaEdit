@@ -1,0 +1,227 @@
+PHASE 1 — PRODUCTION SCAFFOLD + REAL AUTHORITY VERIFICATION (NO WORKAROUNDS)
+
+Do not continue to later phases until this passes the acceptance test below.
+Do not use any temporary storage, mocks, or “fallback” authority results.
+
+0) Requirements & Stack
+
+Fresh Next.js 14 app (App Router) + TypeScript
+
+Tailwind + shadcn/ui
+
+Solana Wallet Adapter (Phantom) with React bindings
+
+@solana/web3.js for RPC
+
+@metaplex-foundation/mpl-token-metadata + UMI for clean PDA + decode (read-only only; no tx in Phase 1)
+
+Zod for API input validation
+
+Alchemy Solana RPC as the only RPC (no Helius, no public fallbacks)
+
+No DB needed for this phase; no Express server; use Next.js API routes
+
+1) Environment
+
+Create these secrets in Replit/Next:
+
+ALCHEMY_SOLANA_RPC=https://solana-mainnet.g.alchemy.com/v2/<YOUR_KEY>
+
+NEXT_PUBLIC_NETWORK=mainnet-beta
+
+Rule: All RPC calls must use process.env.ALCHEMY_SOLANA_RPC. If undefined, the API must return 500 with a clear error.
+
+2) Project Setup
+
+Scaffold:
+
+npx create-next-app@latest solana-metadata-editor --ts --eslint --app
+
+Add Tailwind & shadcn/ui.
+
+Install deps:
+
+npm i @solana/web3.js @metaplex-foundation/mpl-token-metadata \
+      @metaplex-foundation/umi @metaplex-foundation/umi-web3js-adapters \
+      @metaplex-foundation/umi-serializer-amount \
+      @metaplex-foundation/umi-serializer-beet \
+      @metaplex-foundation/umi-options umi \
+      @solana/wallet-adapter-base \
+      @solana/wallet-adapter-react \
+      @solana/wallet-adapter-react-ui \
+      @solana/wallet-adapter-phantom zod
+
+3) RPC Helper (server only)
+
+Create lib/rpc.ts (server-side):
+
+Export getConnection(): Connection that always returns a new Connection(process.env.ALCHEMY_SOLANA_RPC!, 'confirmed').
+
+Throw an error if env is missing. No retries/fallbacks in Phase 1.
+
+4) PDA & Authority Verification (server)
+
+Create an API Route: app/api/auth/verify/route.ts:
+
+Input (JSON):
+
+{
+  "wallet": "string (base58)",
+  "mint": "string (base58)",
+  "kind": "nft" | "collection"   // default: "collection"
+}
+
+
+What to do (strict):
+
+Validate with Zod. If invalid, return 400 with detail.
+
+Derive Metadata PDA:
+
+metadataPda = findMetadataPda(mint)
+(for UMI: seeds ["metadata", TOKEN_METADATA_PROGRAM_ID, mint])
+
+Fetch the metadata account with connection.getAccountInfo(metadataPda, 'confirmed'); if null → 404 { error: "metadata_not_found" }.
+
+Decode with mpl-token-metadata (UMI):
+
+Use UMI web3 adapter to fetch & decode the Metadata account to read updateAuthority and isCollection/collectionDetails as needed.
+
+Authority rule:
+
+For kind: "nft" → authority is metadata.updateAuthority.
+
+For kind: "collection" → authority is the collection mint’s metadata updateAuthority. (That is the mint passed in.)
+
+Compare the base58 wallet param to decoded updateAuthority.
+
+Return:
+
+Success (200):
+
+{
+  "hasAuthority": true | false,
+  "expectedAuthority": "<base58>",
+  "mint": "<mint base58>",
+  "kind": "nft" | "collection",
+  "slot": <number>,  // from getLatestBlockhash or getEpochInfo
+  "rpc": "alchemy"
+}
+
+
+Errors (non-200):
+
+400 { error: "bad_request", details: ... }
+
+404 { error: "metadata_not_found" }
+
+500 { error: "rpc_error", details: ... }
+
+Notes:
+
+Do not use DAS/Helius here. On-chain only.
+
+Do not cache. Do not fall back to any storage.
+
+5) Wallet Provider (client)
+
+Create components/WalletProvider.tsx:
+
+Wrap app with ConnectionProvider pointing to process.env.NEXT_PUBLIC_RPC (read-only) or hardcode from env on client via a public env variable derived from ALCHEMY_SOLANA_RPC (or expose a separate NEXT_PUBLIC_ALCHEMY_RPC—your call, just stay consistent).
+
+Add WalletProvider with the Phantom adapter only.
+
+Add Wallet UI buttons from @solana/wallet-adapter-react-ui.
+
+6) Phase-1 UI Page
+
+Create app/page.tsx (or app/auth/page.tsx) with:
+
+A simple card:
+
+Shows wallet connect/disconnect
+
+Input fields:
+
+Mint Address (required)
+
+Mode radio: Collection (default) / Single NFT
+
+Button: Verify Authority
+
+On click:
+
+POST to /api/auth/verify with { wallet: connectedWallet.publicKey.toBase58(), mint, kind }
+
+Render:
+
+✅ “Authority Verified” (show expectedAuthority)
+
+or ⚠️ “No Authority” (show expectedAuthority)
+
+Show raw JSON response (debug panel) and the computed mint/PDA.
+
+7) Type-Safe Utils
+
+Create lib/validation.ts:
+
+zVerifyBody = z.object({ wallet: z.string().min(32), mint: z.string().min(32), kind: z.enum(['nft', 'collection']).default('collection') })
+
+Create lib/pda.ts:
+
+A helper findMetadataPda(mint: PublicKey) using UMI or raw seeds.
+
+8) Coding Notes (important)
+
+Use only Alchemy RPC for this phase for all getAccountInfo calls.
+
+No client-side hacks. Authority computation must come from server API.
+
+If the PDA account data cannot be decoded (layout mismatch), return 500 with the first 64 bytes of the account (hex) in the error to aid debugging.
+
+9) Acceptance Test (must pass before Phase 2)
+
+Connect Phantom.
+
+Open the Authority page.
+
+Enter the collection mint:
+3NF7v8NecF8AJAHs1HFjqxQpEdLpNpXutc9vRyY9yhGU
+
+Mode: Collection
+
+Click Verify Authority.
+
+The API must respond deterministically with:
+
+hasAuthority: true only if your connected wallet equals the on-chain updateAuthority for that mint’s metadata.
+
+Otherwise hasAuthority: false and must show the expectedAuthority (base58) from chain.
+
+No fallback storage. No “temporarily disabled”. No bypasses.
+
+Repeat with a random NFT mint you do not control; expect hasAuthority: false.
+
+Only after this is green, you may proceed to Phase 2 (single-NFT editor).
+
+Guardrails (do not skip)
+
+If any RPC call fails, fix root cause (env or code). Do not add a mock, local cache, or “guessing” logic.
+
+Keep all code production-grade (typed, validated, with clear error payloads).
+
+Do not import any EVM/MetaMask code anywhere.
+
+Quick self-check list for you
+
+ /api/auth/verify exists and compiles
+
+ Uses Alchemy RPC only
+
+ PDA derivation correct (metadata PDA for provided mint)
+
+ Proper decoding of updateAuthority
+
+ UI shows ✅/⚠️ and raw JSON
+
+ Acceptance test with 3NF7v8...yhGU passes

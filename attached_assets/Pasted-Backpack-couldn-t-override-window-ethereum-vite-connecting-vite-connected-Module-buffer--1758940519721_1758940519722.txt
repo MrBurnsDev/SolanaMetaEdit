@@ -1,0 +1,33 @@
+Backpack couldn't override `window.ethereum`.
+[vite] connecting...
+[vite] connected.
+Module "buffer" has been externalized for browser compatibility. Cannot access "buffer.Buffer" in client code. See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+Phantom was registered as a Standard Wallet. The Wallet Adapter for Phantom can be removed from your app.
+Solflare was registered as a Standard Wallet. The Wallet Adapter for Solflare can be removed from your app.
+Backpack was registered as a Standard Wallet. The Wallet Adapter for Backpack can be removed from your app.
+StreamMiddleware - Unknown response id "solflare-detect-metamask"
+Warning: Encountered two children with the same key, &#x60;MetaMask&#x60;. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+    at ul
+    at div
+    at div
+    at div
+    at WalletModal (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@solana_wallet-adapter-react-ui.js?v=b8bed73a:429:22)
+    at WalletModalProvider (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@solana_wallet-adapter-react-ui.js?v=b8bed73a:596:30)
+    at WalletProviderBase (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GYL6623B.js?v=b8bed73a:6875:31)
+    at WalletProvider (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GYL6623B.js?v=b8bed73a:7087:27)
+    at ConnectionProvider (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GYL6623B.js?v=b8bed73a:5927:29)
+    at SolanaProviders (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/src/components/SolanaProviders.tsx?v=x7BfSgBdKI1ZTHqBfDokH:32:35)
+at ul
+at div
+at div
+at div
+at WalletModal (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@solana_wallet-adapter-react-ui.js?v=b8bed73a:429:22)
+at WalletModalProvider (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@solana_wallet-adapter-react-ui.js?v=b8bed73a:596:30)
+at WalletProviderBase (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GYL6623B.js?v=b8bed73a:6875:31)
+at WalletProvider (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GYL6623B.js?v=b8bed73a:7087:27)
+at ConnectionProvider (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-GYL6623B.js?v=b8bed73a:5927:29)
+at SolanaProviders (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/src/components/SolanaProviders.tsx?v=x7BfSgBdKI1ZTHqBfDokH:32:35)
+at t.value (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://b3ad4735-d59e-4c26-91f8-577b8ce9c663-00-ty6eu7phuio7.picard.replit.dev:5000/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400

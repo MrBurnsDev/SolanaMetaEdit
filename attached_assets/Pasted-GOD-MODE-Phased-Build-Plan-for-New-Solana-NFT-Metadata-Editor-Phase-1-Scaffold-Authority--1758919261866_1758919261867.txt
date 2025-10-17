@@ -1,0 +1,87 @@
+GOD MODE: Phased Build Plan for New Solana NFT Metadata Editor
+
+⸻
+
+Phase 1 – Scaffold & Authority
+
+🎯 Goal: Get a working app shell with wallet connection + authority verification.
+	•	Scaffold Next.js (or Vite React) app with Tailwind + shadcn/ui.
+	•	Add sidebar layout (Dashboard, Metadata Editor, History).
+	•	Implement wallet connection (Phantom via Solana Wallet Adapter).
+	•	Create /api/auth/verify backend route:
+	•	Input: wallet, mint.
+	•	Output: true/false authority check via PDA.
+	•	Show authority banner in UI (✅ you have authority or ⚠️ missing authority).
+	•	Test: Connect Phantom, input mint, confirm authority detection works.
+
+✅ Deliverable: User can connect wallet + see authority status for a mint/collection.
+
+⸻
+
+Phase 2 – Single NFT Editor
+
+🎯 Goal: Fully functional single NFT metadata editing.
+	•	Create unified metadata editor form with fields:
+	•	Name, Symbol, Description, Image URL, External URL.
+	•	Royalties (percentage & basis points).
+	•	Creators (wallet + share).
+	•	Attributes (add/remove).
+	•	Backend /api/tx/build route:
+	•	Uses UMI updateV1 to build unsigned tx.
+	•	Returns base64 tx for client signing.
+	•	Client:
+	•	User edits metadata → clicks Save.
+	•	Wallet signs tx → submits via Alchemy RPC.
+	•	Explorer link shown on success.
+	•	Add service fee transfer instruction to treasury wallet.
+
+✅ Deliverable: User can fully edit metadata for one NFT and push live to Solana.
+
+⸻
+
+Phase 3 – Collection Editing
+
+🎯 Goal: Enable bulk editing of shared metadata fields.
+	•	Load collection via Helius DAS:
+	•	Paginate 30 NFTs per page.
+	•	Infinite scroll for browsing.
+	•	Select NFTs individually or Select All.
+	•	Conflict resolution UI:
+	•	Show shared vs mixed fields.
+	•	Allow user to overwrite mixed with new value.
+	•	Batch processing:
+	•	Server builds UMI txs in chunks of 30.
+	•	Client signs batch → submits sequentially.
+	•	Progress bar + toasts for status.
+
+✅ Deliverable: User can edit shared fields (royalties, creators, symbol, etc.) across an entire collection.
+
+⸻
+
+Phase 4 – Emergency Royalties + Fees
+
+🎯 Goal: Add security + monetization features.
+	•	Add “Emergency Royalties” button:
+	•	Sets royalties to 100% for selected NFT(s) or collection.
+	•	Confirmation modal before signing.
+	•	Service fee already implemented in Phase 2 → validate it works in batch mode too.
+	•	Backend /api/settings route:
+	•	Returns treasury wallet + fee amount.
+	•	Allow easy reconfiguration.
+
+✅ Deliverable: NFT founders can lock scammers out of profit by instantly raising royalties. Treasury wallet receives fee on every tx.
+
+⸻
+
+Phase 5 – Polish & Deploy
+
+🎯 Goal: Make production-ready.
+	•	Remove any placeholder/debug code.
+	•	Add transaction history page (pulls from tx_ledger in Postgres).
+	•	Add loading states (skeletons, spinners, progress bars).
+	•	Add error handling + retry logic for RPC/network failures.
+	•	Deploy app to Vercel (frontend) + Render/Neon (backend + DB).
+
+✅ Deliverable: Fully functional MVP in production, streamlined and secure.
+
+⸻

@@ -1,0 +1,52 @@
+
+🚨 REPLIT PROMPT — START FRESH, PRODUCTION-READY
+
+You must STOP applying temporary workarounds. Build only production-ready code.
+
+We are starting from scratch. Begin a brand new Next.js + Tailwind + shadcn/ui project. Do NOT reuse Vite or Express — remove all legacy structures.
+
+Follow this strict phased build plan:
+
+⸻
+
+✅ Phase 1 — Scaffold + Wallet + Authority
+	1.	Scaffold a clean Next.js app with Tailwind + shadcn/ui.
+	•	Ensure all Tailwind classes exist (no border-border or invalid tokens).
+	•	Confirm Replit’s deployment system will accept the build (npm run build && npm run start).
+	•	NO index.html errors, NO vite.config, NO Express server.
+	2.	Add Phantom wallet connection (solana-wallet-adapter).
+	•	UI: Connect wallet button, show ✅ connected.
+	3.	Implement backend route /api/auth/verify:
+	•	Input: { wallet, mint }
+	•	Logic: Use UMI (@metaplex-foundation/mpl-token-metadata) to fetch PDA for metadata account and compare updateAuthority with connected wallet.
+	•	Output: { authority: true/false }
+	4.	UI Behavior:
+	•	Anyone can view collections or NFTs (no blockers).
+	•	If connected wallet has authority → show ✅ banner.
+	•	If not → show ⚠️ banner, but still allow viewing.
+	•	Block changes only if wallet is not authority.
+
+⸻
+
+⚠️ Critical Rules
+	•	Do sanity checks before coding each step. If something will fail on Replit (e.g., Neon DB WebSocket not supported, Vite config leftover, bad Tailwind class), STOP and adjust.
+	•	Do not move to Phase 2 until Phase 1 passes acceptance tests.
+	•	Do not leave debug blockers or fallback storage. Authority checks must be on-chain.
+	•	Use Alchemy RPC for all blockchain calls. I will provide API key. Helius may be added later as fallback, but Alchemy is primary.
+
+⸻
+
+🎯 Acceptance Test for Phase 1
+
+I will connect Phantom wallet and input a known mint (example: 3NF7v8NecF8AJAHs1HFjqxQpEdLpNpXutc9vRyY9yhGU).
+	•	If my wallet is updateAuthority, /api/auth/verify must return authority: true.
+	•	If not, it must return authority: false.
+	•	UI must show ✅ or ⚠️ accordingly.
+	•	Viewing should always work. Editing should only be blocked when authority = false.
+
+⸻
+
+🚨 DO NOT PROCEED
+
+Do not move to Phase 2 until Phase 1 passes 100%.
+No assumptions, no hacks. If unclear, STOP and ask for clarification

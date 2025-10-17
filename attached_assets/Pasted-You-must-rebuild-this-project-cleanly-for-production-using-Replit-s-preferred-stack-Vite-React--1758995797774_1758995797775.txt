@@ -1,0 +1,47 @@
+You must rebuild this project cleanly for production using Replit’s preferred stack: Vite + React + TailwindCSS on the frontend, and Express on the backend ONLY if API endpoints are needed. Do not include Next.js or serverless frameworks. This must be production-ready, not a dev-only build.
+
+✅ Phase 1 – Core Scaffold
+- Scaffold a fresh Vite + React + TypeScript app.
+- Integrate TailwindCSS (with working `index.css` and Tailwind config).
+- Ensure the app runs cleanly with `npm run dev` and production build with `vite build`.
+- Remove all unused configs (no Next.js files, no vitepress, no debug blockers).
+
+✅ Phase 2 – Web3 Integration
+- Install and configure Metaplex Umi (`@metaplex-foundation/umi` + `@solana/web3.js`).
+- Add Phantom wallet adapter via `@solana/wallet-adapter-react` + `@solana/wallet-adapter-phantom`.
+- Implement a clean authority checker:
+  → Input: wallet + NFT mint or collection mint
+  → Output: true/false from chain PDA authority
+- Absolutely no fallback storage. Must verify against the blockchain (use provided Alchemy RPC).
+
+✅ Phase 3 – Metadata Editing
+- Build a dynamic metadata editor UI:
+  - Single NFT mode → full metadata fields editable (traits, description, image, creators, royalties, etc.).
+  - Collection mode → shared fields editable (creators list, royalty %, collection name, symbol).
+  - Attributes: allow add/remove; if edited at collection level, display placeholder in per-NFT traits.
+- Pagination: 30 NFTs per scroll (infinite scroll).
+
+✅ Phase 4 – Transactions + Treasury
+- Implement “Save Changes” → transaction builder.
+- All metadata updates must:
+  - Deduct small fee in SOL
+  - Route fee to treasury wallet (to be provided)
+  - Apply changes securely
+- Add “Emergency Royalties 100%” button to redirect all royalties to team wallet.
+
+✅ Phase 5 – Production Hardening
+- Use Alchemy RPC for all chain calls (key provided later).
+- Clean up all debug-only code. No temp workarounds.
+- Configure Replit workflow:
+  → `npm run build` = `vite build`
+  → `npm start` = `node server/index.js` (if Express is needed)
+  → Deploy via Replit autoscale with proper port handling.
+- Test: Any wallet can view collections + NFTs. Only updateAuthority wallets can save changes.
+
+⚠️ Rules
+- Do not reintroduce Next.js, Vercel configs, or serverless artifacts.
+- Stop and ask for clarification instead of guessing.
+- Every phase must pass acceptance before continuing.
+- The only blocker for editing should be authority verification. Viewing NFTs/collections must always work.
+
+Now begin by scaffolding Phase 1 exactly as described, confirm the app builds and runs in Replit, and stop for acceptance test before moving to Phase 2.

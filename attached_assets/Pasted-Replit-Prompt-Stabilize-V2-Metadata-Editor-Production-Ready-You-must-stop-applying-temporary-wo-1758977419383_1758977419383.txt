@@ -1,0 +1,57 @@
+Replit Prompt — Stabilize V2 Metadata Editor (Production-Ready)
+
+You must stop applying temporary workarounds and stabilize the existing V2 platform so it works as production-ready software.
+
+🎯 Core Fixes Required
+	1.	Viewing Must Always Work
+	•	Any user should be able to view an NFT or collection by mint address.
+	•	Remove all blockers or debug gates (e.g. “authority check failed” banners that stop the page).
+	•	Metadata and attributes must always load, even without a connected wallet.
+	2.	Authority Check Placement
+	•	Only enforce authority verification when a user tries to save metadata changes.
+	•	Implement a small Authority Checker box above the forms:
+	•	✅ Green if the connected wallet matches updateAuthority.
+	•	⚠️ Yellow if not.
+	•	This checker is informational until the user clicks Save/Update Metadata.
+	•	If user lacks authority → block save and show error toast.
+	•	If user has authority → allow transaction build + submit.
+	3.	RPC Configuration
+	•	Force all blockchain reads and writes through Alchemy RPC (NEXT_PUBLIC_ALCHEMY_MAINNET_URL).
+	•	Do not fall back to Helius or public endpoints unless explicitly configured.
+	•	DAS/asset fetches must also go through Alchemy if possible.
+	•	Remove any leftover “fallback storage” or fake authority checks.
+	4.	Transaction Builder
+	•	All NFT + collection updates must use updateV1 via UMI.
+	•	Eliminate any deprecated instructions (createUpdateMetadataAccountV2Instruction etc.).
+	•	Ensure creators[i].verified = false to avoid multi-signer requirements.
+	5.	UI Unification
+	•	The same editor form should be used for:
+	•	Single NFT editing
+	•	Collection-wide editing
+	•	Shared fields (royalties, creators, symbol, description) should display consistently.
+	•	NFT-specific attributes should still be visible in single-NFT mode.
+	•	In batch mode: show placeholders for traits that would be overridden (e.g. “⚠️ This will overwrite individual attributes”).
+	6.	Remove Non-Essentials
+	•	Delete all SPL Token editing code, test panels, smoke tests, and memo-test files.
+	•	Only retain code for:
+	•	Single NFT editing
+	•	Collection-wide editing
+	•	Authority checks
+	•	Transaction history
+	7.	Acceptance Tests (Must Pass)
+	•	Load mint 3NF7v8NecF8AJAHs1HFjqxQpEdLpNpXutc9vRyY9yhGU. Metadata must display immediately without wallet.
+	•	Connect Phantom with authority wallet → ✅ green checker. Try save → transaction must send.
+	•	Connect Phantom with non-authority wallet → ⚠️ yellow checker. Try save → blocked with toast.
+	•	Edit collection royalties → must succeed if authority wallet connected.
+	•	Emergency royalties toggle (100% royalties) must be visible in collection editor and functional.
+
+⸻
+
+⚠️ Do not add new features until this stabilization is done.
+The goal of this prompt is to:
+	•	Remove blockers.
+	•	Ensure RPC connectivity.
+	•	Fix authority checks at the correct layer.
+	•	Deliver a production-ready MVP that edits metadata.
+
+⸻

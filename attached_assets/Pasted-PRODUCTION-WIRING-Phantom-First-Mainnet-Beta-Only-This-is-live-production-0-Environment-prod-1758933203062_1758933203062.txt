@@ -1,0 +1,306 @@
+PRODUCTION WIRING — Phantom-First, Mainnet-Beta Only (This is live production)
+
+0) Environment (production only)
+
+Create .env (Vite) with only production values:
+
+VITE_ENVIRONMENT=production
+VITE_SOLANA_RPC_MAINNET=https://solana-mainnet.g.alchemy.com/v2/<ALCHEMY_KEY>
+VITE_DAS_URL=https://solana-mainnet.g.alchemy.com/v2/<ALCHEMY_KEY>  # Alchemy DAS
+# Optional Helius fallback (DAS only):
+VITE_HELIUS_DAS=https://mainnet.helius-rpc.com/?api-key=<HELIUS_KEY>
+VITE_APP_NAME=NFT Changer
+VITE_FEE_WALLET=<YOUR_TREASURY_PUBKEY>   # leave empty for $0 fee
+VITE_FEE_LAMPORTS=0
+
+Fail fast if any dev/test env vars exist. Do not define devnet/testnet in this project.
+
+⸻
+
+1) Dependencies (Solana + Phantom + Metaplex UMI)
+
+Install only what we actually use:
+
+npm i @solana/web3.js \
+@solana/wallet-adapter-react @solana/wallet-adapter-react-ui @solana/wallet-adapter-wallets \
+@solana/wallet-adapter-phantom @solana/wallet-adapter-solflare @solana/wallet-adapter-backpack \
+@wallet-standard/core @wallet-standard/app @wallet-standard/standard \
+@metaplex-foundation/umi @metaplex-foundation/umi-serializers @metaplex-foundation/umi-transport-http \
+@metaplex-foundation/umi-signer-wallet-adapters \
+@metaplex-foundation/mpl-token-metadata \
+@metaplex-foundation/digital-asset-standard-api \
+zod
+
+Remove any EVM libs (wagmi, metamask detect, etc.) and any mock/demo wallets.
+
+⸻
+
+2) Kill EVM noise globally
+
+Create once:
+
+// src/lib/ethereum-guard.ts
+Object.defineProperty(window as any, 'ethereum', {
+  configurable: true,
+  get() { return undefined; }
+});
+
+Import at the top of your app entry before React renders:
+
+// src/main.tsx
+import './lib/ethereum-guard';
+
+
+⸻
+
+3) Providers — real wallet + mainnet connection (Phantom-first)
+
+// src/components/SolanaProviders.tsx
+'use client';
+import { ReactNode, useEffect, useMemo } from 'react';
+import { Connection } from '@solana/web3.js';
+import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
+import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
+require('@solana/wallet-adapter-react-ui/styles.css');
+
+const endpoint = import.meta.env.VITE_SOLANA_RPC_MAINNET as string;
+if (!endpoint) throw new Error('VITE_SOLANA_RPC_MAINNET required');
+if (import.meta.env.VITE_ENVIRONMENT !== 'production') throw new Error('Production only');
+
+export function SolanaProviders({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const conn = new Connection(endpoint, 'confirmed');
+    conn.getVersion().catch((e) => {
+      console.error('RPC connectivity failed', e);
+      throw new Error('RPC connectivity failed: check your Alchemy endpoint/key');
+    });
+  }, []);
+
+  const wallets = useMemo(
+    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter(), new BackpackWalletAdapter()],
+    []
+  );
+
+  return (
+    <ConnectionProvider endpoint={endpoint} config={{ commitment: 'confirmed' }}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>{children}</WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
+  );
+}
+
+Wrap your app:
+
+// src/main.tsx
+import { SolanaProviders } from './components/SolanaProviders';
+import './lib/ethereum-guard';
+
+root.render(
+  <SolanaProviders>
+    <App />
+  </SolanaProviders>
+);
+
+
+⸻
+
+4) UMI (browser-safe), Phantom signer, Token Metadata program
+
+// src/lib/umi.ts
+import { createUmi } from '@metaplex-foundation/umi';
+import { createHttpTransport } from '@metaplex-foundation/umi-transport-http';
+import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
+import { mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
+import type { WalletAdapter } from '@solana/wallet-adapter-base';
+
+const endpoint = import.meta.env.VITE_SOLANA_RPC_MAINNET as string;
+
+export function makeUmi(wallet: WalletAdapter) {
+  if (!wallet?.publicKey) throw new Error('Wallet not connected');
+  const umi = createUmi()
+    .use(createHttpTransport({ url: endpoint }))
+    .use(walletAdapterIdentity(wallet))
+    .use(mplTokenMetadata());
+  return umi;
+}
+
+
+⸻
+
+5) Digital Asset discovery (DAS) — Alchemy primary, Helius fallback
+
+// src/lib/das.ts
+const ALCHEMY = import.meta.env.VITE_DAS_URL as string;
+const HELIUS  = import.meta.env.VITE_HELIUS_DAS as string | undefined;
+
+async function fetchJson(url: string, body: any) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc:'2.0', id:'nft-changer', method: body.method, params: body.params })
+  });
+  if (!res.ok) throw new Error(`DAS ${res.status}`);
+  return res.json();
+}
+
+export async function getAssetByMint(mint: string) {
+  const method = 'getAsset';
+  const params = { id: mint };
+  try { return await fetchJson(ALCHEMY, { method, params }); }
+  catch (e) {
+    if (!HELIUS) throw e;
+    return await fetchJson(HELIUS, { method, params });
+  }
+}
+
+export async function getCollectionAssets(collectionMint: string, page = 1, limit = 30) {
+  const method = 'getAssetsByGroup';
+  const params = { groupKey: 'collection', groupValue: collectionMint, page, limit };
+  try { return await fetchJson(ALCHEMY, { method, params }); }
+  catch (e) {
+    if (!HELIUS) throw e;
+    return await fetchJson(HELIUS, { method, params });
+  }
+}
+
+
+⸻
+
+6) Authority check (on-chain, PDA of metadata)
+
+// src/lib/authority.ts
+import { PublicKey, Connection } from '@solana/web3.js';
+const endpoint = import.meta.env.VITE_SOLANA_RPC_MAINNET as string;
+const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
+export async function hasUpdateAuthority(mint: string, wallet: string) {
+  const conn = new Connection(endpoint, 'confirmed');
+  const mintPk = new PublicKey(mint);
+  const [metadataPDA] = PublicKey.findProgramAddressSync(
+    [Buffer.from('metadata'), TOKEN_METADATA_PROGRAM_ID.toBuffer(), mintPk.toBuffer()],
+    TOKEN_METADATA_PROGRAM_ID
+  );
+  const acct = await conn.getAccountInfo(metadataPDA);
+  if (!acct) return false;
+  // lightweight parse: updateAuthority is at fixed offset in Metadata; but easier:
+  // Prefer DAS for authority if available:
+  try {
+    const das = await fetch(import.meta.env.VITE_DAS_URL, {
+      method:'POST', headers:{'content-type':'application/json'},
+      body:JSON.stringify({jsonrpc:'2.0', id:'auth', method:'getAsset', params:{id: mint}})
+    }).then(r=>r.json());
+    const ua = das?.result?.authority?.address;
+    return ua && ua === wallet;
+  } catch { /* fallback to on-chain decode if implemented */ }
+  // If you need full on-chain decode, wire a Metadata parser; for now rely on DAS.
+  return false;
+}
+
+(If you want fully on-chain parsing later, we can add a compact Metadata layout parser. For production now, DAS authority field is sufficient.)
+
+⸻
+
+7) REAL metadata updates (single + batch) using updateV1
+	•	We use UMI + mpl-token-metadata updateV1 (non-deprecated).
+	•	We pass creators.verified = false so no co-sign required.
+	•	We optionally append a fee transfer to your treasury if VITE_FEE_LAMPORTS > 0.
+
+// src/lib/updates.ts
+import { publicKey } from '@metaplex-foundation/umi';
+import { updateV1, type Creator } from '@metaplex-foundation/mpl-token-metadata';
+import { makeUmi } from './umi';
+import type { WalletAdapter } from '@solana/wallet-adapter-base';
+
+type UpdateArgs = {
+  mint: string;
+  name?: string;
+  symbol?: string;
+  uri?: string;             // if you host JSON elsewhere
+  sellerFeeBasisPoints?: number; // 500 = 5%
+  creators?: { address: string; share: number }[];
+};
+
+export async function updateNftMetadata(wallet: WalletAdapter, args: UpdateArgs) {
+  const umi = makeUmi(wallet);
+  const creators: Creator[] | undefined = args.creators
+    ? args.creators.map(c => ({ address: publicKey(c.address), share: c.share, verified: false }))
+    : undefined;
+
+  const ix = updateV1(umi, {
+    mint: publicKey(args.mint),
+    // All fields are optional; pass only the ones changing
+    data: {
+      name: args.name ?? null,
+      symbol: args.symbol ?? null,
+      uri: args.uri ?? null,
+      sellerFeeBasisPoints: args.sellerFeeBasisPoints ?? null,
+      creators: creators ? { __option: 'Some', value: creators } : null,
+      // leave other fields as null to keep them unchanged
+    }
+  });
+
+  const tx = await ix.buildAndSign(umi); // wallet signs via walletAdapterIdentity
+  const sig = await umi.rpc.sendTransaction(tx, { commitment: 'confirmed', skipPreflight: false });
+  await umi.rpc.confirmTransaction(sig, { commitment: 'confirmed' });
+  return sig;
+}
+
+Emergency royalties (100%) helper:
+
+export async function setEmergencyRoyalties(wallet: WalletAdapter, mint: string, recipients: string[]) {
+  // Split 100 across recipients evenly
+  const share = Math.floor(100 / recipients.length);
+  const last = 100 - share * (recipients.length - 1);
+  const creators = recipients.map((a, i) => ({ address: a, share: i === recipients.length-1 ? last : share }));
+  return updateNftMetadata(wallet, { mint, sellerFeeBasisPoints: 10000, creators });
+}
+
+
+⸻
+
+8) UI: one unified editor (single or collection)
+	•	Single NFT: load with getAssetByMint(mint); show all fields, enable changing any.
+	•	Collection: list items with getCollectionAssets(collectionMint, page, 30); let users select all or some, show shared fields (symbol, royalties, creators), and lock per-NFT attributes unless user explicitly chooses to overwrite them (with a clear warning).
+	•	Add Emergency Royalties CTA in both modes (single/collection).
+
+Do not implement SPL token editing or any “dev/test” UI.
+
+⸻
+
+9) Fees (optional)
+
+When VITE_FEE_LAMPORTS > 0, add a system fee transfer instruction before sending:
+	•	With UMI, simplest approach is a separate small SOL transfer SystemProgram.transfer using web3.js right after metadata update, or use a tiny UMI plugin that appends a second ix. For now: keep fees OFF (0) until MVP is stable.
+
+⸻
+
+10) Smoke test (must pass)
+	•	Connect real Phantom → address shows.
+	•	Run a built-in test: getLatestBlockhash + signMessage (like earlier “WalletSmokeTest”).
+	•	Load an NFT by mint via DAS successfully.
+	•	If you own update authority, change sellerFeeBasisPoints by 1 bp and confirm on chain.
+
+⸻
+
+11) Hard production guards
+	•	If VITE_ENVIRONMENT !== 'production', throw on app start.
+	•	If any code path mentions devnet/testnet/simulate/dry-run, delete it.
+	•	No “preview” or “fake job” code.
+
+⸻
+
+12) Acceptance Criteria (ship gate)
+	1.	Only mainnet-beta RPC calls (Alchemy primary; Helius only for DAS fallback).
+	2.	Wallet modal opens Phantom/Solflare/Backpack, address is real, signer OK.
+	3.	getAssetByMint renders full metadata (name, symbol, uri, attributes, creators, royalties).
+	4.	updateV1 succeeds for single NFT where wallet has authority.
+	5.	Collection view paginates (30/page), shows shared fields for batch edits, lets user overwrite attributes only with explicit confirmation.
+	6.	Emergency Royalties button sets royalties to 100% across chosen recipients in one click (single + batch).
+	7.	No EVM warnings. No mocks. No dev/test toggles.
+	8.	Errors show actionable messages (authority missing, RPC error, etc.).
+
+⸻
